@@ -37,6 +37,16 @@ def get_dataset_config(dataset_name: str) -> DatasetConfig:
             convert_func=waymo.convert_waymo_scenario,
             preprocess_func=waymo.preprocess_waymo_scenarios,
         )
+    if dataset_name == "waymo_perception":
+        from scenariomax.raw_to_unified.datasets import waymo_perception
+
+        return DatasetConfig(
+            name="wod",
+            version="v1.4.3",
+            load_func=waymo_perception.get_waymo_perception_scenarios,
+            convert_func=waymo_perception.convert_waymo_perception_scenario,
+            preprocess_func=waymo_perception.preprocess_waymo_perception_scenarios,
+        )
     if dataset_name == "nuscenes":
         raise UnsupportedDatasetError(dataset_name, "nuScenes dataset not yet supported in ScenarioMax")
         from scenariomax.raw_to_unified.datasets import nuscenes
@@ -78,5 +88,5 @@ def get_dataset_config(dataset_name: str) -> DatasetConfig:
             preprocess_func=argoverse2.preprocess_av2_scenarios,
         )
 
-    supported_datasets = ["waymo", "nuplan", "openscenes"]
+    supported_datasets = ["waymo", "waymo_perception" "nuplan", "openscenes"]
     raise UnsupportedDatasetError(dataset_name, supported_datasets)

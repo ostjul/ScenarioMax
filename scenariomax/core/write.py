@@ -1,4 +1,5 @@
 import os
+import glob
 import pickle
 import shutil
 from collections.abc import Callable, Generator, Iterable
@@ -288,18 +289,47 @@ def _execute_parallel_processing(
         preprocess=preprocess,
     )
 
-    logger.debug(f"Starting parallel processing with {num_workers} workers")
+    # Check for debug mode (environment variable)
+    debug_mode = os.getenv("SCENARIOMAX_DEBUG", "false").lower() in ("true", "1", "yes") or logger.level == 10
+    debug_mode = False
+    if debug_mode:
+        logger.info("🐛 DEBUG MODE: Processing workers sequentially (non-parallel)")
+        worker_results = []
+        for worker_index, worker_args in enumerate(worker_arguments_list):
+            ####### Temporary hack to only process Waymo scenarios with extracted mesh in debug mode
+            if "validation" in worker_args[0][0]:
+                base_pth = "/n/fs/pci-sharedt/data_processed/scene-generation-results/proc_geometry/waymo_surface_reconstruction/validation"
+            else:
+                base_pth = "/n/fs/pci-sharedt/data_processed/scene-generation-results/proc_geometry/waymo_surface_reconstruction/training"
+                
+            worker_args[0] = [args for args in worker_args[0] if glob.glob(os.path.join(base_pth, args.split('/')[-1][:14], 'pcd', 'center*'))]
+            #######
 
-    with Parallel(n_jobs=num_workers) as parallel_executor:
-        worker_results = parallel_executor(
-            delayed(single_worker_processing_func)(
+            logger.debug(f"Processing worker {worker_index} sequentially")
+            result = write_to_directory_single_worker(
+                convert_func=convert_func,
+                postprocess_func=postprocess_func,
+                dataset_version=dataset_version,
+                dataset_name=dataset_name,
+                preprocess=preprocess,
                 list_scenarios=worker_args[0],
                 worker_kwargs=worker_args[1],
                 worker_index=worker_args[2],
                 output_path=worker_args[3],
             )
-            for worker_args in worker_arguments_list
-        )
+            worker_results.append(result)
+    else:
+        logger.debug(f"Starting parallel processing with {num_workers} workers")
+        with Parallel(n_jobs=num_workers) as parallel_executor:
+            worker_results = parallel_executor(
+                delayed(single_worker_processing_func)(
+                    list_scenarios=worker_args[0],
+                    worker_kwargs=worker_args[1],
+                    worker_index=worker_args[2],
+                    output_path=worker_args[3],
+                )
+                for worker_args in worker_arguments_list
+            )
 
     # Check for worker failures and raise detailed errors
     for worker_index, processing_success in enumerate(worker_results):
@@ -315,6 +345,8 @@ def _get_scenario_count(scenarios: Any, list_scenarios: list, dataset_name: str)
         from scenariomax.raw_to_unified.datasets.waymo.load import count_waymo_scenarios
 
         return count_waymo_scenarios(list_scenarios)
+    elif dataset_name == "wod":
+        return len(list_scenarios)
     else:
         return len(scenarios)
 

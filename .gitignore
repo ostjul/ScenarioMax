@@ -22,6 +22,7 @@
 
 # Data
 hpc/overlay*
+data/
 data/raw/*
 data/processed/validation/*
 data/processed/testing/*
@@ -30,6 +31,10 @@ data/processed/sampled/*
 data/processed/hand_designed/*
 analyze/figures/*
 *.pkl
+WOD_v*.json
+
+# Logs
+logs/
 
 # Logging
 /wandb

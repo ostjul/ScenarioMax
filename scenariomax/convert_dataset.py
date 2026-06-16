@@ -57,6 +57,7 @@ def create_argument_parser():
 
     # Dataset sources
     parser.add_argument("--waymo_src", help="Waymo dataset directory")
+    parser.add_argument("--waymo_perception_src", help="Waymo Perception dataset directory")
     parser.add_argument("--nuplan_src", help="NuPlan dataset directory")
     parser.add_argument("--nuscenes_src", help="nuScenes dataset directory")
     parser.add_argument("--argoverse2_src", help="Argoverse2 dataset directory")
@@ -125,6 +126,8 @@ def main():
     else:
         if args.waymo_src:
             source_paths["waymo"] = args.waymo_src
+        if args.waymo_perception_src:
+            source_paths["waymo_perception"] = args.waymo_perception_src
         if args.nuplan_src:
             if args.openscenes_metadata_src:
                 source_paths["openscenes"] = args.nuplan_src

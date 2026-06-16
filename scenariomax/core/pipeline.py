@@ -5,7 +5,7 @@ This module provides a single, streamlined interface for converting between
 raw datasets, pickle format, and target formats (TFRecord/GPUDrive) with
 minimal disk I/O and maximum code reuse.
 """
-
+import glob
 import os
 import pickle
 import shutil
@@ -307,6 +307,17 @@ def _process_streaming(
     # Load raw scenarios
     scenarios, additional_args = _load_raw_scenarios(dataset_name, dataset_path, **kwargs)
 
+    debug_mode = os.getenv("SCENARIOMAX_DEBUG", "false").lower() in ("true", "1", "yes") or logger.level == 10
+    if debug_mode:
+        ####### Temporary hack to only process Waymo scenarios with extracted mesh in debug mode
+        logger.info("🐛 DEBUG MODE: Filtering scenarios without reconstructed mesh")
+        if "validation" in scenarios[0]:
+            base_pth = "/n/fs/pci-sharedt/data_processed/scene-generation-results/proc_geometry/waymo_surface_reconstruction/validation"
+        else:
+            base_pth = "/n/fs/pci-sharedt/data_processed/scene-generation-results/proc_geometry/waymo_surface_reconstruction/training"
+
+        scenarios = [scenario_c for scenario_c in scenarios if glob.glob(os.path.join(base_pth, scenario_c.split('/')[-1][:14], 'pcd', 'center*'))]
+
     # Get dataset config and target postprocess function
     config = dataset_registry.get_dataset_config(dataset_name)
     postprocess_func = _get_target_postprocess_func(target_format)
@@ -457,6 +468,8 @@ def _load_raw_scenarios(dataset_name: str, dataset_path: str, **kwargs) -> tuple
     load_args = {"data_path": dataset_path}
 
     if dataset_name == "waymo":
+        load_args["num"] = kwargs.get("num_files")
+    elif dataset_name == "waymo_perception":
         load_args["num"] = kwargs.get("num_files")
     elif dataset_name == "nuscenes":
         load_args["split"] = kwargs.get("split", "v1.0-trainval")

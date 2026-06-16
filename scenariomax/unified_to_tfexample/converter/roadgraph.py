@@ -521,6 +521,9 @@ def _prepare_points(points_to_add: np.ndarray, type: str, dataset: str = "waymo"
     else:
         if dataset == "waymo":
             return _add_interpolated_roadgraph_samples(points_to_add)
+        elif dataset == "waymo_perception":
+            NotImplementedError("Waymo Perception dataset interpolation not implemented yet.")
+            return _add_interpolated_roadgraph_samples(points_to_add)
         else:
             return _calibrate(points_to_add)
 
